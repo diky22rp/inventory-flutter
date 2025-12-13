@@ -1,56 +1,57 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inventory_flutter/core/theme/colors.dart';
 import 'package:inventory_flutter/core/widgets/custom_button.dart';
 import 'package:inventory_flutter/core/widgets/custom_textfield.dart';
-import 'package:inventory_flutter/features/auth/controller/auth_controller.dart';
+import 'package:inventory_flutter/features/auth/pages/register_page.dart';
+import 'package:inventory_flutter/features/auth/provider/auth_notifier.dart';
 import 'package:inventory_flutter/features/main_layout/main_layout.dart';
 
-import 'register_page.dart';
-
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final emailC = TextEditingController();
   final passC = TextEditingController();
   bool isLoading = false;
   String? errorText;
 
   Future<void> _doLogin() async {
+    final auth = ref.read(authProvider.notifier);
+
+    if (emailC.text.isEmpty || passC.text.isEmpty) {
+      setState(() {
+        errorText = 'Email and password cannot be empty.';
+      });
+      return;
+    }
+
     setState(() {
       isLoading = true;
       errorText = null;
     });
 
     try {
-      final user = await AuthController().login(
-        emailC.text.trim(),
-        passC.text.trim(),
-      );
-      if (!mounted) return;
-      if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const MainLayout()),
-        );
-      }
+      await auth.login(emailC.text.trim(), passC.text.trim());
     } on FirebaseAuthException catch (e) {
       setState(() {
-        errorText = e.message;
+        errorText = e.code == 'user-not-found'
+            ? 'No user found for that email.'
+            : e.code == 'wrong-password'
+            ? 'Incorrect password.'
+            : e.message;
       });
     } catch (e) {
       setState(() {
         errorText = 'Login failed, please try again.';
       });
     } finally {
-      if (mounted) {
-        setState(() => isLoading = false);
-      }
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -63,6 +64,17 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<User?>(authProvider, (previous, next) {
+      if (next != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainLayout()),
+          );
+        });
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(

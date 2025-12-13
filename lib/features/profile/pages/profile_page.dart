@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inventory_flutter/core/theme/colors.dart';
-import 'package:inventory_flutter/features/auth/controller/auth_controller.dart';
+// import 'package:inventory_flutter/features/auth/controller/auth_controller.dart';
 import 'package:inventory_flutter/features/auth/pages/login_page.dart';
+import 'package:inventory_flutter/features/auth/provider/auth_notifier.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // final user = FirebaseAuth.instance.currentUser;
+    final userProvider = ref.watch(authProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text("Profile")),
@@ -20,7 +23,7 @@ class ProfilePage extends StatelessWidget {
             const CircleAvatar(radius: 40, child: Icon(Icons.person, size: 40)),
             const SizedBox(height: 16),
             Text(
-              user?.email ?? "-",
+              userProvider?.email ?? "-",
               style: const TextStyle(fontSize: 16, color: AppColors.textDark),
             ),
             const SizedBox(height: 32),
@@ -29,7 +32,8 @@ class ProfilePage extends StatelessWidget {
                 backgroundColor: AppColors.danger,
               ),
               onPressed: () async {
-                await AuthController().logout();
+                final auth = ref.read(authProvider.notifier);
+                await auth.logout();
                 if (!context.mounted) return;
                 Navigator.pushAndRemoveUntil(
                   context,

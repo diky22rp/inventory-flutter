@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inventory_flutter/core/theme/colors.dart';
+import 'package:inventory_flutter/features/auth/provider/auth_notifier.dart';
 import 'package:inventory_flutter/features/home/widgets/quick_actions.dart';
 import 'package:inventory_flutter/features/home/widgets/recent_activity_item.dart';
 import 'package:inventory_flutter/features/home/widgets/summary_card.dart';
@@ -9,13 +11,14 @@ import 'package:inventory_flutter/features/inventory/controller/inventory_contro
 import 'package:inventory_flutter/features/inventory/pages/add_inventory_page.dart';
 import 'package:inventory_flutter/features/inventory/pages/inventory_page.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+  Widget build(BuildContext context, WidgetRef ref) {
+    // final user = FirebaseAuth.instance.currentUser;
     final controller = InventoryController();
+    final userProvider = ref.watch(authProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -33,7 +36,7 @@ class HomePage extends StatelessWidget {
                 style: const TextStyle(fontSize: 14, color: AppColors.textGrey),
               ),
               Text(
-                "${user?.email ?? 'User'} 👋",
+                "${userProvider?.email ?? 'User'} 👋",
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -87,7 +90,7 @@ class HomePage extends StatelessWidget {
                 child: Icon(
                   Icons.inventory_outlined,
                   size: 80,
-                  color: AppColors.primaryBlue.withOpacity(0.25),
+                  color: AppColors.primaryBlue,
                 ),
               ),
 
