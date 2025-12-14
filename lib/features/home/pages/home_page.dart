@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:inventory_flutter/core/theme/colors.dart';
-import 'package:inventory_flutter/features/auth/provider/auth_notifier.dart';
+import 'package:inventory_flutter/features/auth/cubit/auth_cubit.dart';
+// import 'package:inventory_flutter/features/auth/provider/auth_notifier.dart';
 import 'package:inventory_flutter/features/home/widgets/quick_actions.dart';
 import 'package:inventory_flutter/features/home/widgets/recent_activity_item.dart';
 import 'package:inventory_flutter/features/home/widgets/summary_card.dart';
@@ -11,14 +13,13 @@ import 'package:inventory_flutter/features/inventory/controller/inventory_contro
 import 'package:inventory_flutter/features/inventory/pages/add_inventory_page.dart';
 import 'package:inventory_flutter/features/inventory/pages/inventory_page.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     // final user = FirebaseAuth.instance.currentUser;
     final controller = InventoryController();
-    final userProvider = ref.watch(authProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,17 +32,35 @@ class HomePage extends ConsumerWidget {
               // ----------------------------------------------------------
               // HELLO USER
               // ----------------------------------------------------------
-              Text(
-                "Hello,",
-                style: const TextStyle(fontSize: 14, color: AppColors.textGrey),
-              ),
-              Text(
-                "${userProvider?.email ?? 'User'} 👋",
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
-                ),
+              BlocBuilder<AuthCubit, AuthState>(
+                builder: (context, state) {
+                  String email = "User";
+
+                  if (state is AuthAuthenticated) {
+                    email = state.user.email ?? "User";
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Hello,",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textGrey,
+                        ),
+                      ),
+                      Text(
+                        "$email 👋",
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
 
               const SizedBox(height: 20),
