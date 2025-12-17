@@ -1,26 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get.dart';
 import 'package:inventory_flutter/core/theme/colors.dart';
-import 'package:inventory_flutter/features/auth/cubit/auth_cubit.dart';
-// import 'package:inventory_flutter/features/auth/provider/auth_notifier.dart';
+import 'package:inventory_flutter/features/auth/controller/auth_controller.dart';
 import 'package:inventory_flutter/features/home/widgets/quick_actions.dart';
 import 'package:inventory_flutter/features/home/widgets/recent_activity_item.dart';
 import 'package:inventory_flutter/features/home/widgets/summary_card.dart';
 import 'package:inventory_flutter/features/inventory/controller/inventory_controller.dart';
-import 'package:inventory_flutter/features/inventory/pages/add_inventory_page.dart';
-import 'package:inventory_flutter/features/inventory/pages/inventory_page.dart';
+import 'package:inventory_flutter/routes/app_routes.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  HomePage({super.key});
+
+  final authController = Get.find<AuthController>();
+  final inventoryController = InventoryController(); // belum GetX
 
   @override
   Widget build(BuildContext context) {
-    // final user = FirebaseAuth.instance.currentUser;
-    final controller = InventoryController();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -30,53 +26,44 @@ class HomePage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ----------------------------------------------------------
-              // HELLO USER
+              // HELLO USER (GetX)
               // ----------------------------------------------------------
-              BlocBuilder<AuthCubit, AuthState>(
-                builder: (context, state) {
-                  String email = "User";
+              Obx(() {
+                final email =
+                    authController.firebaseUser.value?.email ?? "User";
 
-                  if (state is AuthAuthenticated) {
-                    email = state.user.email ?? "User";
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Hello,",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textGrey,
-                        ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Hello,",
+                      style: TextStyle(fontSize: 14, color: AppColors.textGrey),
+                    ),
+                    Text(
+                      "$email 👋",
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textDark,
                       ),
-                      Text(
-                        "$email 👋",
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
+                    ),
+                  ],
+                );
+              }),
 
               const SizedBox(height: 20),
 
               // ----------------------------------------------------------
-              // SUMMARY CARDS (Total Items & Total Stock)
+              // SUMMARY CARDS
               // ----------------------------------------------------------
               Row(
                 children: [
                   Expanded(
                     child: StreamBuilder<int>(
-                      stream: controller.totalItemCount(),
+                      stream: inventoryController.totalItemCount(),
                       builder: (context, snapshot) {
-                        final totalItems = snapshot.data ?? 0;
                         return SummaryCard(
-                          value: "$totalItems",
+                          value: "${snapshot.data ?? 0}",
                           label: "Total Items",
                           icon: Icons.inventory_2_outlined,
                         );
@@ -86,11 +73,10 @@ class HomePage extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: StreamBuilder<int>(
-                      stream: controller.totalStockCount(),
+                      stream: inventoryController.totalStockCount(),
                       builder: (context, snapshot) {
-                        final totalStock = snapshot.data ?? 0;
                         return SummaryCard(
-                          value: "$totalStock",
+                          value: "${snapshot.data ?? 0}",
                           label: "Total Stock",
                           icon: Icons.numbers,
                         );
@@ -102,9 +88,6 @@ class HomePage extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // ----------------------------------------------------------
-              // OPTIONAL ILLUSTRATION
-              // ----------------------------------------------------------
               Center(
                 child: Icon(
                   Icons.inventory_outlined,
@@ -116,27 +99,21 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 20),
 
               // ----------------------------------------------------------
-              // QUICK ACTIONS (Add Inventory / View Inventory)
+              // QUICK ACTIONS (GetX ROUTING)
               // ----------------------------------------------------------
               QuickActions(
                 onAddInventory: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AddInventoryPage()),
-                  );
+                  Get.toNamed(AppRoutes.addInventory);
                 },
                 onViewInventory: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const InventoryPage()),
-                  );
+                  Get.toNamed(AppRoutes.inventory);
                 },
               ),
 
               const SizedBox(height: 24),
 
               // ----------------------------------------------------------
-              // RECENT ACTIVITY (REALTIME)
+              // RECENT ACTIVITY
               // ----------------------------------------------------------
               const Text(
                 "Recent Activity",
@@ -198,11 +175,10 @@ class HomePage extends StatelessWidget {
   }
 }
 
-//
-// --------------------------------------------------------------
-// HELPER FUNCTIONS (Time Ago + Capitalize)
-// --------------------------------------------------------------
-//
+String capitalize(String s) {
+  if (s.isEmpty) return s;
+  return s[0].toUpperCase() + s.substring(1);
+}
 
 String timeAgo(DateTime? date) {
   if (date == null) return "just now";
@@ -215,9 +191,4 @@ String timeAgo(DateTime? date) {
   if (diff.inDays < 7) return "${diff.inDays} days ago";
 
   return "${(diff.inDays / 7).floor()} weeks ago";
-}
-
-String capitalize(String s) {
-  if (s.isEmpty) return s;
-  return s[0].toUpperCase() + s.substring(1);
 }

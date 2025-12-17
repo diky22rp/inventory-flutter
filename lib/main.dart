@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:inventory_flutter/features/auth/cubit/auth_cubit.dart';
+import 'package:inventory_flutter/features/auth/controller/auth_controller.dart';
+import 'package:inventory_flutter/routes/app_routes.dart';
 import 'firebase_options.dart';
-import 'features/auth/pages/login_page.dart';
-import 'features/main_layout/main_layout.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'features/auth/bindings/auth_binding.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(BlocProvider(create: (context) => AuthCubit(), child: const MyApp()));
+  Get.put(AuthController());
+
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -18,25 +20,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Inventory App',
+      initialBinding: AuthBinding(),
+      initialRoute: AppRoutes.login,
+      getPages: AppRoutes.routes,
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: BlocBuilder<AuthCubit, AuthState>(
-        builder: (context, state) {
-          if (state is AuthAuthenticated) {
-            return const MainLayout();
-          } else if (state is AuthUnauthenticated || state is AuthInitial) {
-            return const LoginPage();
-          } else if (state is AuthLoading) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          } else {
-            return const LoginPage();
-          }
-        },
-      ),
     );
   }
 }
